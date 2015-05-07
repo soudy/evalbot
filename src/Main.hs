@@ -8,20 +8,16 @@ module Main where
 
 import System.IO
 import Network
+import Control.Monad.Reader
+import Control.Exception
 
 import IRC
-import Config
 
 {-
  - Connect, identify and listen main loop
  -}
 main :: IO ()
-main = do
-    h <- connectTo server (PortNumber (fromIntegral sPort))
-
-    hSetBuffering h NoBuffering
-    hSetEncoding  h utf8
-
-    verify h
-    listen h
-
+main = bracket connect dc loop
+  where
+    dc      = hClose . socket
+    loop st = runReaderT run st
