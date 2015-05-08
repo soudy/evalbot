@@ -16,7 +16,6 @@ module IRC
     ) where
 
 import Network
-import Network.HTTP
 import System.Process
 import System.IO
 import Data.List       (isPrefixOf, isInfixOf, intercalate)
@@ -24,6 +23,7 @@ import Data.List.Split (splitOn)
 import Control.Monad.Reader
 
 import Config
+import Commands.DuckDuckGo (search)
 
 data Bot  = Bot { socket :: Handle }
 type Conn = ReaderT Bot IO
@@ -36,7 +36,7 @@ privmsg s = send $ "PRIVMSG " ++ (channel ++ " :" ++ s)
 
 connect :: IO Bot
 connect = do
-    h <- connectTo server (PortNumber (fromIntegral sPort))
+    h <- connectTo server $ PortNumber (fromIntegral sPort)
 
     hSetBuffering h NoBuffering
     hSetEncoding  h utf8
@@ -72,37 +72,29 @@ eval u m
         if (length m) > 28
             then privmsg (u ++ ": That's gonna fill up your screen.")
             else do
-                let arg = (unwords . tail) $ splitOn " " m
+                let arg = unwords . tail $ splitOn " " m
                 output <- liftIO $ readProcess "toilet" ["-f", "future"] arg
                 let messages = splitOn "\n" output
 
-                mapM_ (privmsg) (init messages)
+                mapM_ privmsg $ init messages
 
-    | "!doge"  `isPrefixOf` m = privmsg "https://i.imgur.com/B8qZnEO.gifv"
-    | "!ddg"   `isPrefixOf` m = do
-        let arg   = tail (splitOn " " m)
-        -- Init twice to remove \r. I don't know how I feel about this method
-        let query = init $ init (intercalate "+" arg)
+    | "!doge" `isPrefixOf` m = privmsg "https://i.imgur.com/B8qZnEO.gifv"
+    | "!ddg"  `isPrefixOf` m = do
+        {- privmsg (search m) -}
+        privmsg "todo"
 
-        resp <- liftIO $ simpleHTTP (getRequest $
-                                     "http://api.duckduckgo.com/?q=" ++ query ++
-                                     "&format=json&no_html=1&t=evalbot"
-                                     ) >>= getResponseBody
-
-        privmsg "ok"
-
-eval _ _                         = return ()
+eval _ _                    = return ()
 
 {-
  - Listen forever and handle messages sent in channel
  -}
 listen :: Handle -> Conn ()
 listen h = forever $ do
-    s <- liftIO (hGetLine h)
+    s <- liftIO $ hGetLine h
 
     -- Stay connected, respond to pings
     if ping s
-        then pong
+        then send "PONG"
         else return ()
 
     -- Eval the messages sent by users in the channel
@@ -114,7 +106,6 @@ listen h = forever $ do
 
     isPrivMsg s = isInfixOf "PRIVMSG" s
     getUser   s = (tail . head) $ splitOn "!" s
-    getMsg    s = concat (drop 2 (splitOn ":" s))
+    getMsg    s = concat $ drop 2 (splitOn ":" s)
 
     ping      s = isInfixOf "PING" s
-    pong        = send "PONG"
