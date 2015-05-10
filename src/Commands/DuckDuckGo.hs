@@ -15,7 +15,7 @@ import Network.HTTP.Conduit
 import Data.Aeson
 import Data.List       (intercalate)
 import Data.List.Split (splitOn)
-import Control.Monad
+import Control.Monad   (mzero)
 
 data ApiResponse = ApiResponse { heading     :: Maybe String
                                , abstractUrl :: String
@@ -33,9 +33,9 @@ search a = do
 
     let (Just jsonResponse) = decode resp :: Maybe ApiResponse
 
-    abstractUrl jsonResponse
+    return $ fst $ abstractUrl jsonResponse
   where
     url = "https://api.duckduckgo.com/?q=" ++ a ++ "&format=json&no_html=1&t=evalbot"
 
 main :: IO ()
-main = putStrLn $ search "arch linux"
+main = putStr $ search "arch linux"
