@@ -6,16 +6,19 @@
 -- Distributed under terms of the MIT license.
 --
 
-module DuckDuckGo
+module Commands.DuckDuckGo
     (
-      search
+      search,
+      getAbstractUrl
     ) where
 
-import Network.HTTP.Conduit
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Data.Aeson
 import Data.List       (intercalate)
-import Data.List.Split (splitOn)
 import Control.Monad   (mzero)
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as B
 
 data ApiResponse = ApiResponse { heading     :: Maybe String
                                , abstractUrl :: String
@@ -27,15 +30,18 @@ instance FromJSON ApiResponse where
                            v .:  "AbstractURL"
     parseJSON _          = mzero
 
-search :: String -> String
-search a = do
-    resp <- simpleHttp url
+search :: String -> IO String
+search query = do
+    req <- parseUrl url
 
-    let (Just jsonResponse) = decode resp :: Maybe ApiResponse
-
-    return $ fst $ abstractUrl jsonResponse
+    withManager tlsManagerSettings $ \mgr -> do
+        resp <- httpLbs req mgr
+        return (B.unpack $ responseBody resp)
   where
-    url = "https://api.duckduckgo.com/?q=" ++ a ++ "&format=json&no_html=1&t=evalbot"
+    url = "https://api.duckduckgo.com/?q=" ++ query ++ "&format=json&no_html=1&t=evalbot"
 
-main :: IO ()
-main = putStr $ search "arch linux"
+getAbstractUrl :: String -> String
+getAbstractUrl json = do
+    abstractUrl jsonResponse
+  where
+    (Just jsonResponse) = decode $ B.pack json :: Maybe ApiResponse

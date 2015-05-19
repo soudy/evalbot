@@ -21,9 +21,10 @@ import System.IO
 import Data.List       (isPrefixOf, isInfixOf, intercalate)
 import Data.List.Split (splitOn)
 import Control.Monad.Reader
+import Control.Concurrent (threadDelay)
 
 import Config
-import Commands.DuckDuckGo (search)
+import Commands.DuckDuckGo
 
 data Bot  = Bot { socket :: Handle }
 type Conn = ReaderT Bot IO
@@ -80,8 +81,10 @@ eval u m
 
     | "!doge" `isPrefixOf` m = privmsg "https://i.imgur.com/B8qZnEO.gifv"
     | "!ddg"  `isPrefixOf` m = do
-        {- privmsg (search m) -}
-        privmsg "todo"
+        resp <- liftIO $ search arg
+        privmsg $ getAbstractUrl resp
+      where
+        arg = unwords . tail $ splitOn " " m
 
 eval _ _                    = return ()
 
