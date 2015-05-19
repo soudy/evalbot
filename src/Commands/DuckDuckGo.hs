@@ -38,7 +38,7 @@ search query = do
         resp <- httpLbs req mgr
         return (B.unpack $ responseBody resp)
   where
-    url = "https://api.duckduckgo.com/?q=" ++ query ++ "&format=json&no_html=1&t=evalbot"
+    url = "https://api.duckduckgo.com/?q=" ++ query ++ "&format=json&no_html=1&no_redirect=1"
 
 getAbstractUrl :: String -> String
 getAbstractUrl json = do
