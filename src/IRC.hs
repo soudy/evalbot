@@ -73,7 +73,6 @@ eval u m
         if (length m) > 28
             then privmsg (u ++ ": That's gonna fill up your screen.")
             else do
-                let arg = unwords . tail $ splitOn " " m
                 output <- liftIO $ readProcess "toilet" ["-f", "future"] arg
                 let messages = splitOn "\n" output
 
@@ -83,8 +82,8 @@ eval u m
     | "!ddg"  `isPrefixOf` m = do
         resp <- liftIO $ search arg
         privmsg $ getAbstractUrl resp
-      where
-        arg = unwords . tail $ splitOn " " m
+  where
+    arg = unwords . tail $ splitOn " " m
 
 eval _ _                    = return ()
 
@@ -96,7 +95,7 @@ listen h = forever $ do
     s <- liftIO $ hGetLine h
 
     -- Stay connected, respond to pings
-    if ping s
+    if isInfixOf "PING" s
         then send "PONG"
         else return ()
 
@@ -110,5 +109,3 @@ listen h = forever $ do
     isPrivMsg s = isInfixOf "PRIVMSG" s
     getUser   s = (tail . head) $ splitOn "!" s
     getMsg    s = concat $ drop 2 (splitOn ":" s)
-
-    ping      s = isInfixOf "PING" s

@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 --
--- DuckDuckGo.hs
 -- Copyright (C) 2015 soud <soud@protonmail.com>
 --
 -- Distributed under terms of the MIT license.
@@ -25,9 +24,9 @@ data ApiResponse = ApiResponse { heading     :: Maybe String
                                } deriving Show
 
 instance FromJSON ApiResponse where
-    parseJSON (Object v) = ApiResponse <$>
-                           v .:? "Heading"     <*>
-                           v .:  "AbstractURL"
+    parseJSON (Object v) =
+        ApiResponse <$> v .:? "Heading"
+                    <*> v .:  "AbstractURL"
     parseJSON _          = mzero
 
 search :: String -> IO String
@@ -41,7 +40,6 @@ search query = do
     url = "https://api.duckduckgo.com/?q=" ++ query ++ "&format=json&no_html=1&no_redirect=1"
 
 getAbstractUrl :: String -> String
-getAbstractUrl json = do
-    abstractUrl jsonResponse
+getAbstractUrl json = abstractUrl jsonResponse
   where
     (Just jsonResponse) = decode $ B.pack json :: Maybe ApiResponse
