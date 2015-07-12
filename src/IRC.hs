@@ -7,6 +7,7 @@
 module IRC
     (
       socket
+    , chanmsg
     , privmsg
     , connect
     , run
@@ -32,8 +33,14 @@ type Conn = ReaderT Bot IO
 {-
  - Send private message to current channel on server
  -}
-privmsg :: String -> Conn ()
-privmsg s = send $ "PRIVMSG " ++ (channel ++ " :" ++ s)
+chanmsg :: String -> Conn ()
+chanmsg s = send $ "PRIVMSG " ++ (channel ++ " :" ++ s)
+
+{-
+ - Send private message to user
+ -}
+privmsg :: String -> String -> Conn ()
+privmsg u s = send $ "PRIVMSG " ++ (u ++ " :" ++ s)
 
 connect :: IO Bot
 connect = do
@@ -71,17 +78,19 @@ eval u m
         -- At a length of 29, toilet starts on a new line which means 6 messages in
         -- a row, so let's limit the length to 28
         if (length m) > 28
-            then privmsg (u ++ ": That's gonna fill up your screen.")
+            then chanmsg (u ++ ": That's gonna fill up your screen.")
             else do
                 output <- liftIO $ readProcess "toilet" ["-f", "future"] arg
                 let messages = splitOn "\n" output
 
-                mapM_ privmsg $ init messages
+                mapM_ chanmsg $ init messages
 
-    | "!doge" `isPrefixOf` m = privmsg "https://i.imgur.com/B8qZnEO.gifv"
+    | "!doge" `isPrefixOf` m = chanmsg "https://i.imgur.com/B8qZnEO.gifv"
     | "!ddg"  `isPrefixOf` m = do
         resp <- liftIO $ search arg
-        privmsg $ getAbstractUrl resp
+        chanmsg $ getAbstractUrl resp
+    | "!priv"  `isPrefixOf` m = do
+        privmsg u $ "hello there"
   where
     arg = unwords . tail $ splitOn " " m
 
