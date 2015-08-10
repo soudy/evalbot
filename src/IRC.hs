@@ -74,7 +74,7 @@ send m = do
  -}
 eval :: String -> String -> Conn ()
 eval u m
-    | "!big" `isPrefixOf` m = do
+    | isCmd "!big" = do
         -- At a length of 29, toilet starts on a new line which means 6 messages in
         -- a row, so let's limit the length to 28
         if (length m) > 28
@@ -85,14 +85,15 @@ eval u m
 
                 mapM_ chanmsg $ init messages
 
-    | "!doge" `isPrefixOf` m = chanmsg "https://i.imgur.com/B8qZnEO.gifv"
-    | "!ddg"  `isPrefixOf` m = do
+    | isCmd "!doge" = chanmsg "https://i.imgur.com/B8qZnEO.gifv"
+    | isCmd "!ddg" = do
         resp <- liftIO $ search arg
         chanmsg $ getAbstractUrl resp
-    | "!priv"  `isPrefixOf` m = do
+    | isCmd "!priv" = do
         privmsg u $ "hello there"
   where
     arg = unwords . tail $ splitOn " " m
+    isCmd str = str `isPrefixOf` m
 
 eval _ _                    = return ()
 
